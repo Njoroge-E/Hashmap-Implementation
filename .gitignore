@@ -1,0 +1,8 @@
+main 
+notes.txt
+test 
+test.c
+Makefile
+*.i
+*.o
+*.s
