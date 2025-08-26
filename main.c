@@ -1,108 +1,76 @@
+// main.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include "hashmap.h"
 
-typedef struct StudentDetails {
-    unsigned int id;
-    char name[50];
-} StudentDetails;
-
-StudentDetails* create_students(unsigned int max) {
-    StudentDetails* students = calloc(max, sizeof(StudentDetails));
-    if (!students) {
-        perror("Malloc Failed!\n");
-        return NULL;
+void printSlots(SlotState state) {
+    switch (state) {
+        case EMPTY:
+            printf("Empty\n");
+            break;
+        case OCCUPIED: 
+            printf("Occupied\n");
+            break;
+        case TOMBSTONE:
+            printf("Tombstone\n");
+            break;
     }
-    return students;
-}
-
-unsigned int hash(unsigned int key) {
-    if (key > 0 && key < 11)
-        return (key - 1) % 10;
-    return UINT32_MAX;
-}
-
-// what exactly is _Bool(whatever bool evalueates too) like int returns a num from x to y, what does bool return or do; like how is it defined or rather implemented?
-bool input(unsigned int key, char* name, StudentDetails* students) {
-    if (!students) {
-        fprintf(stderr, "Students array is NULL!\n"); 
-        return false;
-    }
-    unsigned int index = hash(key);
-    if (index == UINT32_MAX) {
-        fprintf(stderr, "Key should be > than 0 and < than 11!\n");
-        return false;
-    }
-    char null_str[50]; 
-    // can you do: char null_str[sizeof(students[index].name)] or it can't evaluate this?; So the use of a function in the [] of a stacck array?
-    memset(null_str, 0, sizeof(null_str));
-
-    // what do you think of the function below for validity?
-    if (students[index].id == 0 && strcmp(students[index].name, null_str) == 0) {
-        students[index].id = key;
-        strncpy(students[index].name, name, sizeof(null_str) - 1);
-        // does strcpy only copy the length of the src string(\n excluded) then \n included later on, and strncpy ensure n chars of src are copied and \n includeed later on or what?
-        return true;
-    }
-    fprintf(stderr, "Key %d is in the hashmap!\n", key);
-    // what's the difference between a hashmap and a hashtable?
-    return false;
-}
-
-bool search(unsigned int key, StudentDetails* students) {
-    if (!students) {
-        fprintf(stderr, "Students array is NULL!\n"); 
-        return false;
-    }
-
-    unsigned int index = hash(key);
-    if (index == UINT32_MAX) {
-        fprintf(stderr, "Key should be > than 0 and < than 11!\n");
-        return false;
-    }
-    char null_str[50];
-    memset(null_str, 0, sizeof(null_str));
-    if (memcmp(students[index].name, null_str, sizeof(null_str)) != 0) {
-    // index is valid
-        return true;
-    }
-    fprintf(stderr, "Key %d is not in the hashmap!\n", key);
-    return false;
 }
 
 
-int main() {
-    StudentDetails* students = create_students(10);
-    // array for hashmap
+int main(void) {
+    HashMap *map = hashmap_init(10);
 
-
-    input(1, "David", students);
-    input(2, "John", students);
-    input(3, "Abby", students);
-    input(4, "Dave", students);
-    input(5, "Michael", students);
-    input(6, "Ryan", students);
-    input(7, "Angela", students);
-    input(8, "Mustafa", students);
-    input(9, "Maria", students);
-    input(10, "Rama", students);
-
-    // trials to see if input() works?
-    input(11, "David", students);
-    input(5, "Maslow", students);
-    // what happens if I enter a negative number as the key like below or key 0?
-    input(-5, "blahblahblah", students);
-    input(0, "blahblahblah", students);
-
-    for (int i = 1; i <= 15; i++) {
-        if (search(i, students)) {
-            printf("Key: %d;\tValue: %s\n", i, students[hash(i)].name);
-            continue;
-        }
-        printf("Key: %d is not in the hashmap\n", i);
+    for (size_t i = 0; i < map->capacity; ++i) {
+        printf("Slot %zu:\t", i);
+        printSlots(map->array[i].state);
     }
+    putchar('\n');
 
+    hashmap_insert(map, "john", (Details){.birth_year=2006, .first_name="John", .last_name="Kangaroo"});
+    hashmap_insert(map, "jeff", (Details){.birth_year=2000, .first_name="Jeff", .last_name="Andrews"});
+    hashmap_insert(map, "nick", (Details){.birth_year=2002, .first_name="Nick", .last_name="Rhumba"});
+    hashmap_insert(map, "mike", (Details){.birth_year=2002, .first_name="Mike", .last_name="Karzonski"});
+    hashmap_insert(map, "emma", (Details){.birth_year=2005, .first_name="Emma", .last_name="Mariam"});
+    hashmap_insert(map, "alex", (Details){.birth_year=2004, .first_name="Alex", .last_name="Montrean"});
+    hashmap_insert(map, "lisa", (Details){.birth_year=2006, .first_name="Lisa", .last_name="Fairy"});
+    hashmap_insert(map, "anna", (Details){.birth_year=2002, .first_name="Anna", .last_name="Mickleberry"});
+
+    for (size_t i = 0; i < map->capacity; ++i) {
+        printf("Slot %zu:\t", i);
+        printSlots(map->array[i].state);
+    }
+    putchar('\n');
+
+    Person *p = NULL;
+    p = hashmap_find(map, "john");
+    printf("john %s\n", p ? "found" : "not found");
+    p = hashmap_find(map, "linda");
+    printf("linda %s\n", p ? "found" : "not found");
+
+    hashmap_remove_entry(map, "nick");
+    p = hashmap_find(map, "nick");
+    printf("nick %s\n", p ? "found" : "not found");
+
+    for (size_t i = 0; i < map->capacity; ++i) {
+        printf("Slot %zu:\t", i);
+        printSlots(map->array[i].state);
+    }
+    putchar('\n');
+
+    hashmap_insert(map, "aztec", (Details){.birth_year=2002, .first_name="Anna", .last_name="Mickleberry"});
+    hashmap_insert(map, "michalangelo", (Details){.birth_year=2002, .first_name="Anna", .last_name="Mickleberry"});
+    hashmap_insert(map, "lenna", (Details){.birth_year=2002, .first_name="Anna", .last_name="Mickleberry"});
+    hashmap_insert(map, "anna", (Details){.birth_year=2002, .first_name="Anastasia", .last_name="Mickleberry"});
+
+    for (size_t i = 0; i < map->capacity; ++i) {
+        printf("Slot %zu:\t", i);
+        printSlots(map->array[i].state);
+    }
+    putchar('\n');
+
+    hashmap_delete(map);
+    free(map);
     return 0;
 }
