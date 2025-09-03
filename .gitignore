@@ -2,7 +2,10 @@ main
 notes.txt
 test 
 test.c
-Makefile
+test.cpp
 *.i
 *.o
 *.s
+test_insert
+test_find 
+test_remove_entry
