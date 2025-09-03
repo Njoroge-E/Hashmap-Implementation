@@ -12,6 +12,5 @@ int main(void) {
 
 
     hashmap_delete(map);
-    free(map);
     return 0;
 }

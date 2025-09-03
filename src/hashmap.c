@@ -19,6 +19,21 @@ static char *strdup_safe(const char *s) {
     return heap_s;
 }
 
+static char *str_reheap(char* earlier_ptr, const char *s) {
+    if (earlier_ptr) {
+        free(earlier_ptr);
+        // No need to NULL earlier_ptr as C passes by value,, and this is now the local copy
+    }
+    size_t len = strlen(s) + 1;
+    char *heap_s = malloc(len);
+    if (!heap_s) {
+        perror("malloc failed! {ref: strdup}\n");
+        return NULL;
+    }
+    memcpy(heap_s, s, len);
+    return heap_s;
+}
+
 
 static uint32_t hash(const char *key) {
     uint32_t num = 0;
@@ -51,26 +66,33 @@ static bool front_add_person(HashMap *map, Person** array ,uint32_t index, Perso
 }
 
 static bool resize_array(HashMap *map) {
-    size_t new_cap = map->bucket_count * 2;
-    Person **new_array = calloc(new_cap, sizeof(Person *));
+    size_t old_bucket_count = map->bucket_count;    
+    size_t new_bucket_count = old_bucket_count * 2;
+
+    
+    Person **new_array = calloc(new_bucket_count, sizeof(Person *));
     if (!new_array) {
         perror("calloc failed! {ref: resize_array}\n");
         return false;
     }
+    map->bucket_count = new_bucket_count;
+    map->bucket_size = 0;
+    map->size  = 0;
 
-    for (size_t i = 0; i < map->bucket_count; ++i) {
+    for (size_t i = 0; i < old_bucket_count; ++i) {
         if (map->array[i]) {
-            for (Person *p = map->array[i]; p; p = p->next) {
-                uint32_t index = hash(p->username) % (uint32_t)new_cap;
-                // front_add();
-                if (!front_add_person(map, new_array, index, p)) return false;
+            Person *p = map->array[i];
+            while (p) {
+                Person *next = p->next;
+                uint32_t idx = hash(p->username) % (uint32_t)new_bucket_count;
+                if (!front_add_person(map, new_array, idx, p)) return false;
+                p  = next;
             }
         }
     }
 
     free(map->array);
     map->array = new_array;
-    map->bucket_count = new_cap;
 
     return true;
 }
@@ -111,7 +133,18 @@ static Person *person_init(const char *username, Details *details) {
     p->next = NULL;
 
     return p;
-}   
+} 
+
+
+static Person *person_update(Person *p, const char *username, Details *details) {
+    if (!username || !details) return NULL;
+
+    p->details.birth_year = details->birth_year;
+    p->details.first_name = details->first_name ? str_reheap(p->details.first_name, details->first_name) : NULL;
+    p->details.last_name = details->last_name ? str_reheap(p->details.last_name, details->last_name) : NULL;
+    // p->next shouldn't be touched in updates
+    return p;
+} 
 
 
 
@@ -124,7 +157,12 @@ bool hashmap_insert(HashMap *map, const char *key, Details details) {
     }
 
     uint32_t index = hash(key) % (uint32_t)map->bucket_count;
-    Person *p = person_init(key, &details);
+    Person *p = hashmap_find(map, key);
+    if (p) {
+        if (!person_update(p, key, &details)) return false;
+        return true;
+    }
+    p = person_init(key, &details);
     if (!front_add_person(map, map->array, index, p)) return false;
 
     return true;
@@ -222,8 +260,9 @@ void hashmap_delete(HashMap *map) {
     }
 
     free(map->array);
-    map->array = (Person**){0};
-    *map = (HashMap) {0};
+    map->array = NULL;
+    free(map);
+    map = NULL;
 }
 
 

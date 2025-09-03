@@ -17,6 +17,7 @@ int main(void) {
     assert(hashmap_insert(map, "alex", (Details){.birth_year=2004, .first_name="Alex", .last_name="Montrean"}));
     assert(hashmap_insert(map, "lisa", (Details){.birth_year=2006, .first_name="Lisa", .last_name="Fairy"}));
     assert(hashmap_insert(map, "anna", (Details){.birth_year=2002, .first_name="Anna", .last_name="Mickleberry"}));
+    assert(hashmap_insert(map, "anna", (Details){.birth_year=2002, .first_name="Analisa", .last_name="Mickleberry"}));
 
     printf("buckets used: %zu\n", map->bucket_size);
     printf("total bukets: %zu\n", map->bucket_count);
@@ -31,6 +32,5 @@ int main(void) {
 
 
     hashmap_delete(map);
-    free(map);
     return 0;
 }

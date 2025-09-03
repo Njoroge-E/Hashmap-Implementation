@@ -1,11 +1,11 @@
 CC = clang
-CFLAGS = -g -Wall -std=c99 -I src
+CFLAGS = -g -Wall -std=c99 -I src/
 
 SRC = $(wildcard src/*.c) main.c
 OBJ = $(SRC:.c=.o) 
 
 
-all: main
+all: main tests
 
 main: $(OBJ)
 	$(CC) $(CFLAGS) -o main $(OBJ)

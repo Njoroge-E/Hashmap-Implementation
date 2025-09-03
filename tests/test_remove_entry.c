@@ -15,6 +15,5 @@ int main(void) {
     assert(hashmap_remove_entry(map, "john"));
 
     hashmap_delete(map);
-    free(map);
     return 0;
 }
