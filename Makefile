@@ -1,3 +1,4 @@
+.PHONY: all clean tests
 CC = clang
 CFLAGS = -g -Wall -std=c99 -I src/
 
